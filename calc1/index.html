@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Калькулятор сроков производства мебели — расчёт времени порезки, кромки, сборки и доставки">
+    <title>Калькулятор сроков производства</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="calc" id="calculator">
+        <!-- Header -->
+        <header class="calc__header">
+            <svg class="calc__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" />
+                <line x1="8" y1="6" x2="16" y2="6" />
+                <line x1="16" y1="14" x2="16" y2="18" />
+                <line x1="8" y1="10" x2="8" y2="10.01" />
+                <line x1="12" y1="10" x2="12" y2="10.01" />
+                <line x1="16" y1="10" x2="16" y2="10.01" />
+                <line x1="8" y1="14" x2="8" y2="14.01" />
+                <line x1="12" y1="14" x2="12" y2="14.01" />
+                <line x1="8" y1="18" x2="8" y2="18.01" />
+                <line x1="12" y1="18" x2="12" y2="18.01" />
+            </svg>
+            <h1 class="calc__title">Сроки производства</h1>
+        </header>
+
+        <!-- Inputs -->
+        <div class="calc__fields">
+
+            <div class="calc__group">
+                <label class="calc__label" for="sheets_count">Кол-во листов материала</label>
+                <input class="calc__input" type="number" id="sheets_count" name="sheets_count" min="0" value="0"
+                    inputmode="numeric">
+            </div>
+
+            <div class="calc__group">
+                <label class="calc__label" for="edge_type">Тип кромки</label>
+                <div class="calc__select-wrap">
+                    <select class="calc__select" id="edge_type" name="edge_type">
+                        <option value="PVC">PVC</option>
+                        <option value="Paint Grade">Paint Grade</option>
+                    </select>
+                    <svg class="calc__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="calc__group">
+                <label class="calc__label" for="delivery_hours">Доставка (часы)</label>
+                <input class="calc__input" type="number" id="delivery_hours" name="delivery_hours" min="0" value="0"
+                    inputmode="numeric">
+            </div>
+
+            <div class="calc__group">
+                <label class="calc__label" for="start_date">Начало работ</label>
+                <input class="calc__input calc__input--datetime" type="datetime-local" id="start_date"
+                    name="start_date">
+            </div>
+
+        </div>
+
+        <!-- Divider -->
+        <div class="calc__divider"></div>
+
+        <!-- Results -->
+        <div class="calc__results">
+            <div class="calc__result">
+                <span class="calc__result-label">Чистое время</span>
+                <span class="calc__result-value" id="result_duration">—</span>
+            </div>
+            <div class="calc__result">
+                <span class="calc__result-label">Готовность</span>
+                <span class="calc__result-value calc__result-value--accent" id="result_datetime">—</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

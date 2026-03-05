@@ -1,0 +1,24 @@
+name: Deploy calc1
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'calc1/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Copy files via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "calc1/"
+          target: "~/bespoke-apps/"
