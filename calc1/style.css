@@ -64,6 +64,7 @@ body {
   background: var(--clr-bg);
   color: var(--clr-text);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -82,13 +83,27 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .calc { animation: none; }
-  *, *::before, *::after { transition: none !important; }
+  .calc {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
 }
 
 /* --- Header --- */
@@ -167,8 +182,88 @@ body {
   -webkit-appearance: none;
   margin: 0;
 }
+
 .calc__input[type="number"] {
   -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Placeholder colour — muted, not real value */
+.calc__input::placeholder {
+  color: var(--clr-text-muted);
+  opacity: 0.5;
+}
+
+/* Number input wrapper */
+.calc__number-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.calc__input--center {
+  text-align: center;
+  padding-left: 2.75rem;
+  padding-right: 2.75rem;
+}
+
+.calc__input--suffix {
+  padding-right: 4rem;
+  /* Need more space for suffix text */
+}
+
+/* Step buttons */
+.calc__step {
+  position: absolute;
+  top: 1.5px;
+  bottom: 1.5px;
+  width: 2.75rem;
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 1.5px);
+  color: var(--clr-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--tr-fast), color var(--tr-fast);
+  z-index: 10;
+}
+
+.calc__step:hover {
+  background: var(--clr-result-bg);
+  color: var(--clr-text);
+}
+
+.calc__step:active {
+  background: var(--clr-border);
+}
+
+.calc__step--minus {
+  left: 1.5px;
+}
+
+.calc__step--plus {
+  right: 1.5px;
+}
+
+.calc__step svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Suffix */
+.calc__suffix {
+  position: absolute;
+  right: 2.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--clr-text-muted);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  pointer-events: none;
+  user-select: none;
+  z-index: 5;
 }
 
 /* Select wrapper */
@@ -242,9 +337,11 @@ body {
     align-items: flex-start;
     padding-top: var(--sp-xl);
   }
+
   .calc {
     padding: var(--sp-lg);
   }
+
   .calc__title {
     font-size: var(--fs-lg);
   }

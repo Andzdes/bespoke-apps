@@ -39,8 +39,23 @@
 
             <div class="calc__group">
                 <label class="calc__label" for="sheets_count">Кол-во листов материала</label>
-                <input class="calc__input" type="number" id="sheets_count" name="sheets_count" min="0" value="0"
-                    inputmode="numeric">
+                <div class="calc__number-wrap">
+                    <button type="button" class="calc__step calc__step--minus" tabindex="-1" data-target="sheets_count">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <input class="calc__input calc__input--center" type="number" id="sheets_count" name="sheets_count"
+                        min="0" placeholder="0" inputmode="numeric">
+                    <button type="button" class="calc__step calc__step--plus" tabindex="-1" data-target="sheets_count">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="calc__group">
@@ -59,14 +74,31 @@
 
             <div class="calc__group">
                 <label class="calc__label" for="delivery_hours">Доставка (часы)</label>
-                <input class="calc__input" type="number" id="delivery_hours" name="delivery_hours" min="0" value="0"
-                    inputmode="numeric">
+                <div class="calc__number-wrap">
+                    <button type="button" class="calc__step calc__step--minus" tabindex="-1"
+                        data-target="delivery_hours">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <input class="calc__input calc__input--center calc__input--suffix" type="number" id="delivery_hours"
+                        name="delivery_hours" min="0" value="3" inputmode="numeric">
+                    <span class="calc__suffix">ч.</span>
+                    <button type="button" class="calc__step calc__step--plus" tabindex="-1"
+                        data-target="delivery_hours">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="calc__group">
                 <label class="calc__label" for="start_date">Начало работ</label>
-                <input class="calc__input calc__input--datetime" type="datetime-local" id="start_date"
-                    name="start_date">
+                <input class="calc__input" type="datetime-local" id="start_date" name="start_date">
             </div>
 
         </div>

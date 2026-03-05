@@ -17,7 +17,7 @@ const TIMEZONE = 'America/Los_Angeles';
 const elSheets = document.getElementById('sheets_count');
 const elEdge = document.getElementById('edge_type');
 const elDelivery = document.getElementById('delivery_hours');
-const elStart = document.getElementById('start_date');
+const elStart = document.getElementById('start_date');          // hidden datetime-local
 const elDuration = document.getElementById('result_duration');
 const elDatetime = document.getElementById('result_datetime');
 
@@ -63,6 +63,9 @@ const elDatetime = document.getElementById('result_datetime');
 })();
 
 // ── Timezone helpers ── //
+
+// Removed updateStartDisplay as we use native datetime-local
+
 
 /**
  * Return the "wall-clock" components in TIMEZONE for a given UTC ms timestamp.
@@ -130,7 +133,7 @@ function calculate() {
     // 1. Read inputs
     const sheets = Math.max(0, Math.floor(Number(elSheets.value) || 0));
     const edge = elEdge.value; // "PVC" or "Paint Grade"
-    const delivery = Math.max(0, Number(elDelivery.value) || 0);
+    const delivery = Math.max(0, Number(elDelivery.value !== '' ? elDelivery.value : 3) || 0);
     const startStr = elStart.value;
 
     if (!startStr) {
@@ -223,10 +226,40 @@ function calculate() {
 });
 elEdge.addEventListener('change', calculate);
 
+// Note: Native datetime picker handles its own display
+
+// Clear number fields on focus so user doesn't have to delete the digit
+[elSheets].forEach(el => {
+    el.addEventListener('focus', () => { if (el.value === '0' || el.value === '') el.value = ''; });
+    el.addEventListener('blur', () => { if (el.value === '') { el.value = ''; /* keep empty = placeholder */ } });
+});
+
+// Delivery: clear on focus, restore 3 if left blank
+elDelivery.addEventListener('focus', () => { if (Number(elDelivery.value) === 3 || elDelivery.value === '') elDelivery.value = ''; });
+elDelivery.addEventListener('blur', () => { if (elDelivery.value === '') { elDelivery.value = 3; calculate(); } });
+
 // Prevent negative values on number inputs
 [elSheets, elDelivery].forEach(el => {
     el.addEventListener('input', () => {
         if (el.value !== '' && Number(el.value) < 0) el.value = 0;
+    });
+});
+
+// Step buttons logic
+document.querySelectorAll('.calc__step').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const inputEl = document.getElementById(targetId);
+        if (!inputEl) return;
+
+        let val = Number(inputEl.value) || 0;
+        if (btn.classList.contains('calc__step--minus')) {
+            val = Math.max(0, val - 1);
+        } else {
+            val += 1;
+        }
+        inputEl.value = val;
+        calculate(); // trigger recalculation
     });
 });
 
