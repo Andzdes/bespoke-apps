@@ -13,6 +13,9 @@ const WORK_DAYS = [1, 2, 3, 4, 5, 6]; // 1=Mon … 5=Fri
 const PG_LIMIT = 30;   // +1 work-day per N sheets of Paint Grade
 const TIMEZONE = 'America/Los_Angeles';
 
+const ROUND_DURATION_MIN = 5; // Округление для "Чистое время" (в минутах)
+const ROUND_DATETIME_MIN = 5; // Округление для "Готовность" (в минутах)
+
 // ── DOM refs ── //
 const elSheets = document.getElementById('sheets_count');
 const elEdge = document.getElementById('edge_type');
@@ -150,19 +153,21 @@ function calculate() {
     // 3. Extra whole work-days for Paint Grade
     let extraDays = 0;
     if (edge === 'Paint Grade' && sheets > 0) {
-        extraDays = Math.floor(sheets / PG_LIMIT);
+        extraDays = Math.ceil(sheets / PG_LIMIT);
     }
     const workdayMinutes = (WORKDAY_END_HOUR - WORKDAY_START_HOUR) * 60;
     totalMin += extraDays * workdayMinutes;
 
     // 4. Format "pure duration"
-    const durDays = Math.floor(totalMin / workdayMinutes);
-    const durHours = Math.floor((totalMin % workdayMinutes) / 60);
-    const durMin = totalMin % 60;
+    let displayTotalMin = Math.round(totalMin / ROUND_DURATION_MIN) * ROUND_DURATION_MIN;
+
+    const durDays = Math.floor(displayTotalMin / workdayMinutes);
+    const durHours = Math.floor((displayTotalMin % workdayMinutes) / 60);
+    const durMin = displayTotalMin % 60;
     let durStr = '';
     if (durDays > 0) durStr += `${durDays} дн. `;
-    if (durHours > 0 || durDays > 0) durStr += `${durHours} ч.`;
-    if (durStr === '') durStr = `${durMin} мин.`;
+    if (durHours > 0 || durDays > 0) durStr += `${durHours} ч. `;
+    if (durMin > 0 || durStr === '') durStr += `${durMin} мин.`;
     elDuration.textContent = durStr.trim();
 
     // 5. Project onto calendar
@@ -208,10 +213,14 @@ function calculate() {
         remaining -= chunk;
     }
 
+    // Round the final datetime
+    const msToRound = ROUND_DATETIME_MIN * 60000;
+    let roundedCursor = Math.round(cursor / msToRound) * msToRound;
+
     // 6. Format result datetime — "MMM DD, HH:00 am/pm"
-    const finDate = new Date(cursor);
+    const finDate = new Date(roundedCursor);
     const monthStr = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, month: 'short' }).format(finDate);
-    const fin = wallClock(cursor);
+    const fin = wallClock(roundedCursor);
     const pad = (n) => String(n).padStart(2, '0');
     const h24 = fin.hour;
     const ampm = h24 >= 12 ? 'pm' : 'am';
@@ -224,7 +233,16 @@ function calculate() {
 [elSheets, elDelivery, elStart].forEach(el => {
     el.addEventListener('input', calculate);
 });
-elEdge.addEventListener('change', calculate);
+
+// Edge toggle
+const elEdgePrev = document.getElementById('edge_prev');
+const elEdgeNext = document.getElementById('edge_next');
+function toggleEdge() {
+    elEdge.value = elEdge.value === 'PVC' ? 'Paint Grade' : 'PVC';
+    calculate();
+}
+if (elEdgePrev) elEdgePrev.addEventListener('click', toggleEdge);
+if (elEdgeNext) elEdgeNext.addEventListener('click', toggleEdge);
 
 // Note: Native datetime picker handles its own display
 
