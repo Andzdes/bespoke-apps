@@ -9,7 +9,7 @@ const EDGE_PG_MIN_PER_SHEET = 20;
 const ASSEMBLY_MIN_PER_SHEET = 25;
 const WORKDAY_START_HOUR = 7;
 const WORKDAY_END_HOUR = 18;
-const WORK_DAYS = [1, 2, 3, 4, 5, 6]; // 1=Mon … 5=Fri
+const WORK_DAYS = [1, 2, 3, 4, 5, 6]; // 1=Mon … 6=Sat
 const PG_LIMIT = 30;   // +1 work-day per N sheets of Paint Grade
 const TIMEZONE = 'America/Los_Angeles';
 
@@ -27,13 +27,22 @@ const elHint = document.getElementById('calc_hint');
 
 let calcTimer;
 
+// ── Check if tomorrow is a non-work day (based on real current time) ── //
+const tomorrowIsOff = (function checkTomorrow() {
+    const nowMs = Date.now();
+    const tomorrowMs = nowMs + 24 * 3600000;
+    const wc = wallClock(tomorrowMs);
+    const iso = isoWeekday(wc);
+    return !WORK_DAYS.includes(iso);
+})();
+
 // ── Initialise start_date default (now in TIMEZONE, snapped to work hours) ── //
 (function setDefaultStart() {
     // Start from now, then advance to the nearest work-time moment
     let utcMs = Date.now();
 
     // Inline snap: advance cursor until it falls inside a work slot
-    for (let guard = 0; guard < 525960; guard++) {
+    for (let guard = 0; guard < 200; guard++) {
         const wc = wallClock(utcMs);
         const iso = wc.weekday === 0 ? 7 : wc.weekday; // ISO weekday
         if (WORK_DAYS.includes(iso) &&
@@ -42,7 +51,7 @@ let calcTimer;
             break; // already in work time
         }
         if (!WORK_DAYS.includes(iso)) {
-            utcMs += 60000; // non-work day: minute-step (advanceToWorkTime handles weekends)
+            utcMs += (24 - wc.hour) * 3600000 - wc.minute * 60000;
         } else if (wc.hour < WORKDAY_START_HOUR) {
             utcMs += (WORKDAY_START_HOUR - wc.hour) * 3600000 - wc.minute * 60000;
         } else {
@@ -180,7 +189,7 @@ function calculate() {
 
     // Helper: advance cursor to next working-time minute (if it's outside work hours)
     function advanceToWorkTime() {
-        for (let guard = 0; guard < 525960; guard++) { // max ~1 year of minutes
+        for (let guard = 0; guard < 200; guard++) {
             const wc = wallClock(cursor);
             const iso = isoWeekday(wc);
             if (WORK_DAYS.includes(iso) &&
@@ -188,15 +197,11 @@ function calculate() {
                 wc.hour < WORKDAY_END_HOUR) {
                 return; // cursor is in a work-minute
             }
-            // Jump smartly instead of +1 min each time
             if (!WORK_DAYS.includes(iso)) {
-                // Skip whole non-work day → jump to next day 00:00 in TZ then retry
-                cursor += 60000; // tick forward (simple; loops will handle)
+                cursor += (24 - wc.hour) * 3600000 - wc.minute * 60000;
             } else if (wc.hour < WORKDAY_START_HOUR) {
-                // Before work → jump to WORKDAY_START_HOUR same day
                 cursor += (WORKDAY_START_HOUR - wc.hour) * 3600000 - wc.minute * 60000;
             } else {
-                // After work → jump to next day start
                 cursor += ((24 - wc.hour) + WORKDAY_START_HOUR) * 3600000 - wc.minute * 60000;
             }
         }
@@ -235,7 +240,8 @@ function calculate() {
         assembly: sheets * ASSEMBLY_MIN_PER_SHEET,
         paintDays: extraDays,
         delivery: delivery,
-        weekends: countWeekends(startStr, cursor)
+        weekends: countWeekendsDuring(startStr, cursor),
+        sheets: sheets
     });
 }
 
@@ -243,6 +249,16 @@ function showBreakdownDebounced(data) {
     if (calcTimer) clearTimeout(calcTimer);
     if (elHint) elHint.classList.remove('is-visible');
 
+    // Показываем "Завтра выходной" сразу, без задержки
+    if (tomorrowIsOff) {
+        elHint.textContent = "Завтра выходной. Работы начнутся в Пн";
+        elHint.classList.add('is-visible');
+    }
+
+    // Если листов нет — только сообщение выше, без дальнейшего расчёта
+    if (!data.sheets || data.sheets <= 0) return;
+
+    // Остальной breakdown через 3 сек
     calcTimer = setTimeout(() => {
         const parts = [];
         const formatHMM = (m) => {
@@ -251,11 +267,14 @@ function showBreakdownDebounced(data) {
             return `${hrs}:${String(mins).padStart(2, '0')}`;
         };
 
+        if (tomorrowIsOff) parts.push("Завтра выходной. Работы начнутся в Пн");
+
         if (data.cutting > 0) parts.push(`Порезка - ${formatHMM(data.cutting)}`);
         if (data.edging > 0) parts.push(`Поклейка - ${formatHMM(data.edging)}`);
         if (data.assembly > 0) parts.push(`Сборка - ${formatHMM(data.assembly)}`);
         if (data.paintDays > 0) parts.push(`Покраска кромки - ${data.paintDays} дн`);
         if (data.delivery > 0) parts.push(`Доставка - ${data.delivery}:00`);
+
         if (data.weekends > 0) {
             const dayWord = data.weekends === 1 ? 'день' : (data.weekends < 5 ? 'дня' : 'дней');
             parts.push(`Выходной - ${data.weekends} ${dayWord}`);
@@ -269,32 +288,21 @@ function showBreakdownDebounced(data) {
 }
 
 /**
- * Counts unique non-work days (weekends) between start and finish.
+ * Counts unique non-work days (weekends) between start and finish of work.
  */
-function countWeekends(startStr, endUtcMs) {
+function countWeekendsDuring(startStr, endUtcMs) {
     let tempCursor = parseLocalToUTC(startStr);
-    const end = endUtcMs;
+    if (tempCursor >= endUtcMs) return 0;
+
     const skippedDates = new Set();
 
-    // Small step to scan through the timeline
-    while (tempCursor < end) {
+    while (tempCursor <= endUtcMs) {
         const wc = wallClock(tempCursor);
         const iso = isoWeekday(wc);
         if (!WORK_DAYS.includes(iso)) {
             skippedDates.add(`${wc.year}-${wc.month}-${wc.day}`);
         }
-        // Jump to next day 00:00 to speed up
-        tempCursor += 24 * 3600000;
-
-        // Adjust back to start of day in TZ to avoid missing days due to DST or shifts
-        const nextDay = wallClock(tempCursor);
-        // This is a bit rough but should work for counting unique dates
-    }
-
-    // Check the final date too
-    const finalWc = wallClock(end);
-    if (!WORK_DAYS.includes(isoWeekday(finalWc))) {
-        skippedDates.add(`${finalWc.year}-${finalWc.month}-${finalWc.day}`);
+        tempCursor += 12 * 3600000;
     }
 
     return skippedDates.size;
