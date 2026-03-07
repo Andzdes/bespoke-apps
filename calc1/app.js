@@ -23,6 +23,9 @@ const elDelivery = document.getElementById('delivery_hours');
 const elStart = document.getElementById('start_date');          // hidden datetime-local
 const elDuration = document.getElementById('result_duration');
 const elDatetime = document.getElementById('result_datetime');
+const elHint = document.getElementById('calc_hint');
+
+let calcTimer;
 
 // ── Initialise start_date default (now in TIMEZONE, snapped to work hours) ── //
 (function setDefaultStart() {
@@ -224,6 +227,77 @@ function calculate() {
     const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
     elDatetime.textContent =
         `${monthStr} ${fin.day}, ${h12}:${pad(fin.minute)} ${ampm}`;
+
+    // 7. Show calculation breakdown (debounced)
+    showBreakdownDebounced({
+        cutting: sheets * CUTTING_MIN_PER_SHEET,
+        edging: sheets * edgeRate,
+        assembly: sheets * ASSEMBLY_MIN_PER_SHEET,
+        paintDays: extraDays,
+        delivery: delivery,
+        weekends: countWeekends(startStr, cursor)
+    });
+}
+
+function showBreakdownDebounced(data) {
+    if (calcTimer) clearTimeout(calcTimer);
+    if (elHint) elHint.classList.remove('is-visible');
+
+    calcTimer = setTimeout(() => {
+        const parts = [];
+        const formatHMM = (m) => {
+            const hrs = Math.floor(m / 60);
+            const mins = m % 60;
+            return `${hrs}:${String(mins).padStart(2, '0')}`;
+        };
+
+        if (data.cutting > 0) parts.push(`Порезка - ${formatHMM(data.cutting)}`);
+        if (data.edging > 0) parts.push(`Поклейка - ${formatHMM(data.edging)}`);
+        if (data.assembly > 0) parts.push(`Сборка - ${formatHMM(data.assembly)}`);
+        if (data.paintDays > 0) parts.push(`Покраска кромки - ${data.paintDays} дн`);
+        if (data.delivery > 0) parts.push(`Доставка - ${data.delivery}:00`);
+        if (data.weekends > 0) {
+            const dayWord = data.weekends === 1 ? 'день' : (data.weekends < 5 ? 'дня' : 'дней');
+            parts.push(`Выходной - ${data.weekends} ${dayWord}`);
+        }
+
+        if (elHint && parts.length > 0) {
+            elHint.textContent = parts.join(', ');
+            elHint.classList.add('is-visible');
+        }
+    }, 3000);
+}
+
+/**
+ * Counts unique non-work days (weekends) between start and finish.
+ */
+function countWeekends(startStr, endUtcMs) {
+    let tempCursor = parseLocalToUTC(startStr);
+    const end = endUtcMs;
+    const skippedDates = new Set();
+
+    // Small step to scan through the timeline
+    while (tempCursor < end) {
+        const wc = wallClock(tempCursor);
+        const iso = isoWeekday(wc);
+        if (!WORK_DAYS.includes(iso)) {
+            skippedDates.add(`${wc.year}-${wc.month}-${wc.day}`);
+        }
+        // Jump to next day 00:00 to speed up
+        tempCursor += 24 * 3600000;
+
+        // Adjust back to start of day in TZ to avoid missing days due to DST or shifts
+        const nextDay = wallClock(tempCursor);
+        // This is a bit rough but should work for counting unique dates
+    }
+
+    // Check the final date too
+    const finalWc = wallClock(end);
+    if (!WORK_DAYS.includes(isoWeekday(finalWc))) {
+        skippedDates.add(`${finalWc.year}-${finalWc.month}-${finalWc.day}`);
+    }
+
+    return skippedDates.size;
 }
 
 // ── Event binding (reactive recalculation) ── //
