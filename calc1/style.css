@@ -213,7 +213,8 @@ body {
 }
 
 /* Step buttons */
-.calc__step {
+.calc__step,
+[role="button"] {
   position: absolute;
   top: 1.5px;
   bottom: 1.5px;
@@ -228,6 +229,7 @@ body {
   cursor: pointer;
   transition: background var(--tr-fast), color var(--tr-fast);
   z-index: 10;
+  user-select: none;
 }
 
 .calc__step:hover {

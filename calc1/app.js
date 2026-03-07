@@ -158,21 +158,22 @@ function calculate() {
     const workdayMinutes = (WORKDAY_END_HOUR - WORKDAY_START_HOUR) * 60;
     totalMin += extraDays * workdayMinutes;
 
-    // 4. Format "pure duration"
-    let displayTotalMin = Math.round(totalMin / ROUND_DURATION_MIN) * ROUND_DURATION_MIN;
+    // 4. Round total minutes ONCE — used for both display and calendar projection
+    let roundedTotalMin = Math.round(totalMin / ROUND_DURATION_MIN) * ROUND_DURATION_MIN;
 
-    const durDays = Math.floor(displayTotalMin / workdayMinutes);
-    const durHours = Math.floor((displayTotalMin % workdayMinutes) / 60);
-    const durMin = displayTotalMin % 60;
+    // 4a. Format "pure duration"
+    const durDays = Math.floor(roundedTotalMin / workdayMinutes);
+    const durHours = Math.floor((roundedTotalMin % workdayMinutes) / 60);
+    const durMin = roundedTotalMin % 60;
     let durStr = '';
     if (durDays > 0) durStr += `${durDays} дн. `;
     if (durHours > 0 || durDays > 0) durStr += `${durHours} ч. `;
     if (durMin > 0 || durStr === '') durStr += `${durMin} мин.`;
     elDuration.textContent = durStr.trim();
 
-    // 5. Project onto calendar
+    // 5. Project rounded minutes onto calendar
     let cursor = parseLocalToUTC(startStr);
-    let remaining = totalMin;
+    let remaining = roundedTotalMin;
 
     // Helper: advance cursor to next working-time minute (if it's outside work hours)
     function advanceToWorkTime() {
@@ -213,14 +214,10 @@ function calculate() {
         remaining -= chunk;
     }
 
-    // Round the final datetime
-    const msToRound = ROUND_DATETIME_MIN * 60000;
-    let roundedCursor = Math.round(cursor / msToRound) * msToRound;
-
     // 6. Format result datetime — "MMM DD, HH:00 am/pm"
-    const finDate = new Date(roundedCursor);
+    const finDate = new Date(cursor);
     const monthStr = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, month: 'short' }).format(finDate);
-    const fin = wallClock(roundedCursor);
+    const fin = wallClock(cursor);
     const pad = (n) => String(n).padStart(2, '0');
     const h24 = fin.hour;
     const ampm = h24 >= 12 ? 'pm' : 'am';
@@ -241,8 +238,9 @@ function toggleEdge() {
     elEdge.value = elEdge.value === 'PVC' ? 'Paint Grade' : 'PVC';
     calculate();
 }
-if (elEdgePrev) elEdgePrev.addEventListener('click', toggleEdge);
-if (elEdgeNext) elEdgeNext.addEventListener('click', toggleEdge);
+// Using pointerdown can be more reliable in some iframe scenarios
+if (elEdgePrev) elEdgePrev.addEventListener('pointerdown', (e) => { e.preventDefault(); toggleEdge(); });
+if (elEdgeNext) elEdgeNext.addEventListener('pointerdown', (e) => { e.preventDefault(); toggleEdge(); });
 
 // Note: Native datetime picker handles its own display
 
