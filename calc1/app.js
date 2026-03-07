@@ -61,14 +61,62 @@ const elHint = document.getElementById('calc_hint');
 
 let calcTimer;
 
-// ── Check if tomorrow is a non-work day (based on real current time) ── //
-const tomorrowIsOff = (function checkTomorrow() {
+// ── Day-off hint (based on real current time) ── //
+const DAY_NAMES_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+/**
+ * Returns a hint string if the user is currently at the boundary of
+ * a non-work period, or null otherwise.
+ *
+ * Rules:
+ *  - During work hours on a workday → no message
+ *  - Workday, before work starts   → no message (work begins today)
+ *  - Workday, after work ends AND tomorrow is a day off
+ *       → "Завтра выходной. Работы начнутся в {day}"
+ *  - Currently a non-work day
+ *       → "Сегодня выходной. Работы начнутся в {day}"
+ */
+function getOffDayHint() {
     const nowMs = Date.now();
-    const tomorrowMs = nowMs + 24 * 3600000;
-    const wc = wallClock(tomorrowMs);
-    const iso = isoWeekday(wc);
-    return !WORK_DAYS.includes(iso);
-})();
+    const wc = wallClock(nowMs);
+    const todayIso = isoWeekday(wc);
+    const todayIsWorkday = WORK_DAYS.includes(todayIso);
+
+    // Find the next workday starting from a given UTC ms
+    function findNextWorkday(fromMs) {
+        let ms = fromMs;
+        for (let i = 0; i < 10; i++) {
+            ms += 24 * 3600000;
+            const w = wallClock(ms);
+            const iso = isoWeekday(w);
+            if (WORK_DAYS.includes(iso)) {
+                // Return JS weekday (0=Sun..6=Sat) for DAY_NAMES_SHORT
+                return DAY_NAMES_SHORT[w.weekday];
+            }
+        }
+        return null;
+    }
+
+    if (!todayIsWorkday) {
+        // Case A: today is a day off
+        const next = findNextWorkday(nowMs);
+        return next ? `Сегодня выходной. Работы начнутся в ${next}` : null;
+    }
+
+    if (wc.hour >= WORKDAY_END_HOUR) {
+        // Case B: workday is over — check if tomorrow is off
+        const tomorrowMs = nowMs + 24 * 3600000;
+        const tw = wallClock(tomorrowMs);
+        const tomorrowIso = isoWeekday(tw);
+        if (!WORK_DAYS.includes(tomorrowIso)) {
+            const next = findNextWorkday(nowMs);
+            return next ? `Завтра выходной. Работы начнутся в ${next}` : null;
+        }
+    }
+
+    // Workday, during or before work hours — no hint
+    return null;
+}
 
 // ── Initialise start_date default (now in TIMEZONE, snapped to work hours) ── //
 (function setDefaultStart() {
@@ -283,9 +331,11 @@ function showBreakdownDebounced(data) {
     if (calcTimer) clearTimeout(calcTimer);
     if (elHint) elHint.classList.remove('is-visible');
 
-    // Показываем "Завтра выходной" сразу, без задержки
-    if (tomorrowIsOff) {
-        elHint.textContent = "Завтра выходной. Работы начнутся в Пн";
+    const offDayHint = getOffDayHint();
+
+    // Показываем сообщение о выходном сразу, без задержки
+    if (offDayHint) {
+        elHint.innerHTML = `<b>${offDayHint}</b>`;
         elHint.classList.add('is-visible');
     }
 
@@ -313,8 +363,6 @@ function showBreakdownDebounced(data) {
             return `${formatHMM(m)} (${dayPart}${hrPart} раб. времени)`;
         };
 
-        if (tomorrowIsOff) parts.push("Завтра выходной. Работы начнутся в Пн");
-
         if (data.cutting > 0) parts.push(`Порезка - ${withDayBreakdown(data.cutting)}`);
         if (data.edging > 0) parts.push(`Поклейка - ${withDayBreakdown(data.edging)}`);
         if (data.assembly > 0) parts.push(`Сборка - ${withDayBreakdown(data.assembly)}`);
@@ -327,6 +375,10 @@ function showBreakdownDebounced(data) {
 
         if (elHint && parts.length > 0) {
             let hintHtml = '';
+            // Если есть сообщение о выходном — вставить bold + перенос строки
+            if (offDayHint) {
+                hintHtml += `<b>${offDayHint}</b><br>`;
+            }
             parts.forEach((part, i) => {
                 hintHtml += part;
                 if (i < parts.length - 1) {
