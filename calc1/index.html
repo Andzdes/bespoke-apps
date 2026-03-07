@@ -32,7 +32,142 @@
                 <line x1="12" y1="18" x2="12" y2="18.01" />
             </svg>
             <h1 class="calc__title">Сроки производства</h1>
+            <button type="button" class="calc__settings-btn" id="settings_btn" title="Настройки">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+            </button>
         </header>
+
+        <!-- Settings Panel -->
+        <div class="calc__settings" id="settings_panel" hidden>
+            <!-- Tabs -->
+            <div class="settings__tabs">
+                <button type="button" class="settings__tab is-active" data-tab="main">Основные</button>
+                <button type="button" class="settings__tab" data-tab="advanced">Дополнительно</button>
+            </div>
+
+            <!-- Tab: Основные -->
+            <div class="settings__pane" id="settings_tab_main">
+
+                <div class="settings__block">
+                    <div class="settings__section-title">Нормы времени (мин/лист)</div>
+                    <label class="settings__row">
+                        <span class="settings__label">Порезка</span>
+                        <input type="number" class="settings__input" id="cfg_cutting" min="1" max="999">
+                        <span class="settings__unit">мин</span>
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Поклейка кромки (ПВХ)</span>
+                        <input type="number" class="settings__input" id="cfg_edge_pvc" min="1" max="999">
+                        <span class="settings__unit">мин</span>
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Поклейка кромки (PG)</span>
+                        <input type="number" class="settings__input" id="cfg_edge_pg" min="1" max="999">
+                        <span class="settings__unit">мин</span>
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Сборка</span>
+                        <input type="number" class="settings__input" id="cfg_assembly" min="1" max="999">
+                        <span class="settings__unit">мин</span>
+                    </label>
+                </div>
+
+                <div class="settings__block">
+                    <div class="settings__section-title">Рабочий день</div>
+                    <label class="settings__row">
+                        <span class="settings__label">Начало</span>
+                        <input type="number" class="settings__input" id="cfg_day_start" min="0" max="23">
+                        <span class="settings__unit">час</span>
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Конец</span>
+                        <input type="number" class="settings__input" id="cfg_day_end" min="1" max="24">
+                        <span class="settings__unit">час</span>
+                    </label>
+                    <div class="settings__row settings__row--block">
+                        <span class="settings__label">Рабочие дни</span>
+                        <div class="settings__weekdays" id="cfg_workdays">
+                            <label class="settings__day"><input type="checkbox" value="1"><span>Пн</span></label>
+                            <label class="settings__day"><input type="checkbox" value="2"><span>Вт</span></label>
+                            <label class="settings__day"><input type="checkbox" value="3"><span>Ср</span></label>
+                            <label class="settings__day"><input type="checkbox" value="4"><span>Чт</span></label>
+                            <label class="settings__day"><input type="checkbox" value="5"><span>Пт</span></label>
+                            <label class="settings__day"><input type="checkbox" value="6"><span>Сб</span></label>
+                            <label class="settings__day"><input type="checkbox" value="7"><span>Вс</span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings__block">
+                    <div class="settings__section-title">Производство</div>
+                    <label class="settings__row">
+                        <span class="settings__label">Лимит листов PG (+1 день)</span>
+                        <input type="number" class="settings__input" id="cfg_pg_limit" min="1" max="999">
+                        <span class="settings__unit">л.</span>
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Доставка по умолчанию</span>
+                        <input type="number" class="settings__input" id="cfg_delivery_default" min="0" max="99">
+                        <span class="settings__unit">ч.</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Tab: Дополнительно -->
+            <div class="settings__pane" id="settings_tab_advanced" hidden>
+
+                <div class="settings__block">
+                    <div class="settings__section-title">Интерфейс</div>
+                    <label class="settings__row">
+                        <span class="settings__label">Задержка автокрутки ±</span>
+                        <input type="number" class="settings__input" id="cfg_hold_delay" min="100" max="5000"
+                            step="100">
+                        <span class="settings__unit">мс</span>
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Скорость автокрутки</span>
+                        <input type="number" class="settings__input" id="cfg_hold_repeat" min="50" max="1000" step="25">
+                        <span class="settings__unit">мс</span>
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Задержка подсказки</span>
+                        <input type="number" class="settings__input" id="cfg_hint_delay" min="0" max="10" step="0.5">
+                        <span class="settings__unit">сек</span>
+                    </label>
+                </div>
+
+                <div class="settings__block">
+                    <div class="settings__section-title">Прочее</div>
+                    <label class="settings__row">
+                        <span class="settings__label">Часовой пояс</span>
+                        <input type="text" class="settings__input settings__input--wide" id="cfg_timezone"
+                            placeholder="America/Los_Angeles">
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Округление чистого времени</span>
+                        <input type="number" class="settings__input" id="cfg_round_dur" min="1" max="60">
+                        <span class="settings__unit">мин</span>
+                    </label>
+                    <label class="settings__row">
+                        <span class="settings__label">Округление готовности</span>
+                        <input type="number" class="settings__input" id="cfg_round_dt" min="1" max="60">
+                        <span class="settings__unit">мин</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Footer actions -->
+            <div class="settings__footer">
+                <button type="button" class="settings__btn-reset" id="settings_reset">Сбросить</button>
+                <button type="button" class="settings__btn-cancel" id="settings_cancel">Отмена</button>
+                <button type="button" class="settings__btn-save" id="settings_save">Сохранить</button>
+            </div>
+        </div>
 
         <!-- Inputs -->
         <div class="calc__fields">

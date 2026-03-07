@@ -2,19 +2,53 @@
    Shop Calculator — Production Timeline Logic
    ============================================================= */
 
-// ── Constants (edit these to tune the calculator) ── //
-const CUTTING_MIN_PER_SHEET = 18;
-const EDGE_PVC_MIN_PER_SHEET = 20;
-const EDGE_PG_MIN_PER_SHEET = 20;
-const ASSEMBLY_MIN_PER_SHEET = 25;
-const WORKDAY_START_HOUR = 7;
-const WORKDAY_END_HOUR = 18;
-const WORK_DAYS = [1, 2, 3, 4, 5, 6]; // 1=Mon … 6=Sat
-const PG_LIMIT = 30;   // +1 work-day per N sheets of Paint Grade
-const TIMEZONE = 'America/Los_Angeles';
+// ── Settings: defaults ── //
+const DEFAULTS = {
+    cutting: 18,
+    edge_pvc: 20,
+    edge_pg: 20,
+    assembly: 25,
+    day_start: 7,
+    day_end: 18,
+    work_days: [1, 2, 3, 4, 5, 6],
+    pg_limit: 30,
+    delivery_default: 3,
+    hold_delay: 1000,
+    hold_repeat: 125,
+    hint_delay: 3,
+    timezone: 'America/Los_Angeles',
+    round_dur: 5,
+    round_dt: 5,
+};
 
-const ROUND_DURATION_MIN = 5; // Округление для "Чистое время" (в минутах)
-const ROUND_DATETIME_MIN = 5; // Округление для "Готовность" (в минутах)
+// ── Load settings from localStorage ── //
+function loadSettings() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('calc1_settings') || '{}');
+        return Object.assign({}, DEFAULTS, saved);
+    } catch {
+        return Object.assign({}, DEFAULTS);
+    }
+}
+
+// ── Apply cfg to working variables ── //
+let cfg = loadSettings();
+
+let CUTTING_MIN_PER_SHEET = cfg.cutting;
+let EDGE_PVC_MIN_PER_SHEET = cfg.edge_pvc;
+let EDGE_PG_MIN_PER_SHEET = cfg.edge_pg;
+let ASSEMBLY_MIN_PER_SHEET = cfg.assembly;
+let WORKDAY_START_HOUR = cfg.day_start;
+let WORKDAY_END_HOUR = cfg.day_end;
+let WORK_DAYS = cfg.work_days.slice();
+let PG_LIMIT = cfg.pg_limit;
+let TIMEZONE = cfg.timezone;
+let ROUND_DURATION_MIN = cfg.round_dur;
+let ROUND_DATETIME_MIN = cfg.round_dt;
+let DELIVERY_DEFAULT = cfg.delivery_default;
+let HOLD_DELAY_MS = cfg.hold_delay;
+let HOLD_REPEAT_MS = cfg.hold_repeat;
+let HINT_DELAY_MS = cfg.hint_delay * 1000;
 
 // ── DOM refs ── //
 const elSheets = document.getElementById('sheets_count');
@@ -261,30 +295,64 @@ function showBreakdownDebounced(data) {
     // Остальной breakdown через 3 сек
     calcTimer = setTimeout(() => {
         const parts = [];
+        const workdayMin = (WORKDAY_END_HOUR - WORKDAY_START_HOUR) * 60;
+
         const formatHMM = (m) => {
             const hrs = Math.floor(m / 60);
             const mins = m % 60;
             return `${hrs}:${String(mins).padStart(2, '0')}`;
         };
 
+        // Если минут больше одного рабочего дня — добавляем расшифровку в скобках
+        const withDayBreakdown = (m) => {
+            if (m <= workdayMin) return formatHMM(m);
+            const days = Math.floor(m / workdayMin);
+            const remHrs = Math.floor((m % workdayMin) / 60);
+            const dayPart = `${days} ${pluralRu(days, 'день', 'дня', 'дней')}`;
+            const hrPart = remHrs > 0 ? `, ${remHrs} ч` : '';
+            return `${formatHMM(m)} (${dayPart}${hrPart} раб. времени)`;
+        };
+
         if (tomorrowIsOff) parts.push("Завтра выходной. Работы начнутся в Пн");
 
-        if (data.cutting > 0) parts.push(`Порезка - ${formatHMM(data.cutting)}`);
-        if (data.edging > 0) parts.push(`Поклейка - ${formatHMM(data.edging)}`);
-        if (data.assembly > 0) parts.push(`Сборка - ${formatHMM(data.assembly)}`);
-        if (data.paintDays > 0) parts.push(`Покраска кромки - ${data.paintDays} дн`);
-        if (data.delivery > 0) parts.push(`Доставка - ${data.delivery}:00`);
+        if (data.cutting > 0) parts.push(`Порезка - ${withDayBreakdown(data.cutting)}`);
+        if (data.edging > 0) parts.push(`Поклейка - ${withDayBreakdown(data.edging)}`);
+        if (data.assembly > 0) parts.push(`Сборка - ${withDayBreakdown(data.assembly)}`);
+        if (data.paintDays > 0) parts.push(`Покраска кромки - ${data.paintDays} ${pluralRu(data.paintDays, 'день', 'дня', 'дней')}`);
+        if (data.delivery > 0) parts.push(`Доставка - ${withDayBreakdown(data.delivery * 60)}`);
 
         if (data.weekends > 0) {
-            const dayWord = data.weekends === 1 ? 'день' : (data.weekends < 5 ? 'дня' : 'дней');
-            parts.push(`Выходной - ${data.weekends} ${dayWord}`);
+            parts.push(`Выходной - ${data.weekends} ${pluralRu(data.weekends, 'день', 'дня', 'дней')}`);
         }
 
         if (elHint && parts.length > 0) {
-            elHint.textContent = parts.join(', ');
+            let hintHtml = '';
+            parts.forEach((part, i) => {
+                hintHtml += part;
+                if (i < parts.length - 1) {
+                    hintHtml += part.includes('(') ? ',<br>' : ', ';
+                }
+            });
+            elHint.innerHTML = hintHtml;
             elHint.classList.add('is-visible');
         }
-    }, 3000);
+    }, HINT_DELAY_MS);
+}
+
+/**
+ * Russian pluralization: picks the correct word form for a given number.
+ * @param {number} n - the number
+ * @param {string} one - form for 1 (день)
+ * @param {string} few - form for 2-4 (дня)
+ * @param {string} many - form for 5+ (дней)
+ */
+function pluralRu(n, one, few, many) {
+    const mod100 = Math.abs(n) % 100;
+    const mod10 = Math.abs(n) % 10;
+    if (mod100 >= 11 && mod100 <= 14) return many;
+    if (mod10 === 1) return one;
+    if (mod10 >= 2 && mod10 <= 4) return few;
+    return many;
 }
 
 /**
@@ -344,22 +412,169 @@ elDelivery.addEventListener('blur', () => { if (elDelivery.value === '') { elDel
 });
 
 // Step buttons logic
-document.querySelectorAll('.calc__step').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const targetId = btn.getAttribute('data-target');
-        const inputEl = document.getElementById(targetId);
-        if (!inputEl) return;
+// — sheets buttons: hold 1s → auto-repeat at 8/sec
+// — other buttons:  simple click
 
-        let val = Number(inputEl.value) || 0;
-        if (btn.classList.contains('calc__step--minus')) {
-            val = Math.max(0, val - 1);
-        } else {
-            val += 1;
-        }
-        inputEl.value = val;
-        calculate(); // trigger recalculation
-    });
+function stepValue(btn) {
+    const targetId = btn.getAttribute('data-target');
+    const inputEl = document.getElementById(targetId);
+    if (!inputEl) return;
+    let val = Number(inputEl.value) || 0;
+    if (btn.classList.contains('calc__step--minus')) {
+        val = Math.max(0, val - 1);
+    } else {
+        val += 1;
+    }
+    inputEl.value = val;
+    calculate();
+}
+
+document.querySelectorAll('.calc__step[data-target="sheets_count"]').forEach(btn => {
+    let holdTimer = null;
+    let repeatTimer = null;
+
+    const startHold = (e) => {
+        e.preventDefault();
+        stepValue(btn); // immediate first step
+
+        holdTimer = setTimeout(() => {
+            repeatTimer = setInterval(() => stepValue(btn), HOLD_REPEAT_MS);
+        }, HOLD_DELAY_MS);
+    };
+
+    const stopHold = () => {
+        clearTimeout(holdTimer);
+        clearInterval(repeatTimer);
+        holdTimer = repeatTimer = null;
+    };
+
+    btn.addEventListener('pointerdown', startHold);
+    btn.addEventListener('pointerup', stopHold);
+    btn.addEventListener('pointerleave', stopHold);
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
+});
+
+// Other step buttons (delivery, etc.) — simple click
+document.querySelectorAll('.calc__step:not([data-target="sheets_count"])').forEach(btn => {
+    btn.addEventListener('click', () => stepValue(btn));
 });
 
 // Initial calculation
 calculate();
+
+// ── Settings panel UI ── //
+(function initSettings() {
+    const btnOpen = document.getElementById('settings_btn');
+    const panel = document.getElementById('settings_panel');
+    const btnSave = document.getElementById('settings_save');
+    const btnReset = document.getElementById('settings_reset');
+    const btnCancel = document.getElementById('settings_cancel');
+    const tabs = document.querySelectorAll('.settings__tab');
+    const panes = { main: document.getElementById('settings_tab_main'), advanced: document.getElementById('settings_tab_advanced') };
+
+    // Toggle open/close
+    btnOpen.addEventListener('click', () => {
+        const isOpen = !panel.hidden;
+        panel.hidden = isOpen;
+        if (!isOpen) populateForm(cfg);
+    });
+
+    // Cancel — close without saving
+    btnCancel.addEventListener('click', () => {
+        panel.hidden = true;
+    });
+
+    // Tab switching
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('is-active'));
+            tab.classList.add('is-active');
+            Object.values(panes).forEach(p => p.hidden = true);
+            panes[tab.dataset.tab].hidden = false;
+        });
+    });
+
+    function populateForm(c) {
+        document.getElementById('cfg_cutting').value = c.cutting;
+        document.getElementById('cfg_edge_pvc').value = c.edge_pvc;
+        document.getElementById('cfg_edge_pg').value = c.edge_pg;
+        document.getElementById('cfg_assembly').value = c.assembly;
+        document.getElementById('cfg_day_start').value = c.day_start;
+        document.getElementById('cfg_day_end').value = c.day_end;
+        document.getElementById('cfg_pg_limit').value = c.pg_limit;
+        document.getElementById('cfg_delivery_default').value = c.delivery_default;
+        document.getElementById('cfg_hold_delay').value = c.hold_delay;
+        document.getElementById('cfg_hold_repeat').value = c.hold_repeat;
+        document.getElementById('cfg_hint_delay').value = c.hint_delay;
+        document.getElementById('cfg_timezone').value = c.timezone;
+        document.getElementById('cfg_round_dur').value = c.round_dur;
+        document.getElementById('cfg_round_dt').value = c.round_dt;
+        // Weekday checkboxes
+        document.querySelectorAll('#cfg_workdays input[type="checkbox"]').forEach(cb => {
+            cb.checked = c.work_days.includes(Number(cb.value));
+        });
+    }
+
+    function readForm() {
+        const days = [];
+        document.querySelectorAll('#cfg_workdays input[type="checkbox"]:checked').forEach(cb => {
+            days.push(Number(cb.value));
+        });
+        return {
+            cutting: Number(document.getElementById('cfg_cutting').value) || DEFAULTS.cutting,
+            edge_pvc: Number(document.getElementById('cfg_edge_pvc').value) || DEFAULTS.edge_pvc,
+            edge_pg: Number(document.getElementById('cfg_edge_pg').value) || DEFAULTS.edge_pg,
+            assembly: Number(document.getElementById('cfg_assembly').value) || DEFAULTS.assembly,
+            day_start: Number(document.getElementById('cfg_day_start').value),
+            day_end: Number(document.getElementById('cfg_day_end').value),
+            work_days: days.length ? days : DEFAULTS.work_days.slice(),
+            pg_limit: Number(document.getElementById('cfg_pg_limit').value) || DEFAULTS.pg_limit,
+            delivery_default: Number(document.getElementById('cfg_delivery_default').value),
+            hold_delay: Number(document.getElementById('cfg_hold_delay').value) || DEFAULTS.hold_delay,
+            hold_repeat: Number(document.getElementById('cfg_hold_repeat').value) || DEFAULTS.hold_repeat,
+            hint_delay: Number(document.getElementById('cfg_hint_delay').value),
+            timezone: document.getElementById('cfg_timezone').value.trim() || DEFAULTS.timezone,
+            round_dur: Number(document.getElementById('cfg_round_dur').value) || DEFAULTS.round_dur,
+            round_dt: Number(document.getElementById('cfg_round_dt').value) || DEFAULTS.round_dt,
+        };
+    }
+
+    function applyConfig(c) {
+        CUTTING_MIN_PER_SHEET = c.cutting;
+        EDGE_PVC_MIN_PER_SHEET = c.edge_pvc;
+        EDGE_PG_MIN_PER_SHEET = c.edge_pg;
+        ASSEMBLY_MIN_PER_SHEET = c.assembly;
+        WORKDAY_START_HOUR = c.day_start;
+        WORKDAY_END_HOUR = c.day_end;
+        WORK_DAYS = c.work_days.slice();
+        PG_LIMIT = c.pg_limit;
+        DELIVERY_DEFAULT = c.delivery_default;
+        HOLD_DELAY_MS = c.hold_delay;
+        HOLD_REPEAT_MS = c.hold_repeat;
+        HINT_DELAY_MS = c.hint_delay * 1000;
+        TIMEZONE = c.timezone;
+        ROUND_DURATION_MIN = c.round_dur;
+        ROUND_DATETIME_MIN = c.round_dt;
+        elDelivery.value = c.delivery_default;
+    }
+
+    btnSave.addEventListener('click', () => {
+        const newCfg = readForm();
+        cfg = newCfg;
+        localStorage.setItem('calc1_settings', JSON.stringify(newCfg));
+        applyConfig(newCfg);
+        panel.hidden = true;
+        calculate();
+    });
+
+    btnReset.addEventListener('click', () => {
+        cfg = Object.assign({}, DEFAULTS);
+        localStorage.removeItem('calc1_settings');
+        populateForm(cfg);
+        applyConfig(cfg);
+        calculate();
+    });
+
+    // Populate on first load (in case panel opened before save)
+    populateForm(cfg);
+})();
