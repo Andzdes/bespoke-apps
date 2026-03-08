@@ -80,6 +80,9 @@ body {
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
   padding: var(--sp-xl);
+  min-height: 720px;
+  display: flex;
+  flex-direction: column;
   animation: fadeIn 0.4s ease;
 }
 
