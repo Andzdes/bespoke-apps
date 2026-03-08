@@ -304,6 +304,12 @@ function calculate() {
         remaining -= chunk;
     }
 
+    // 6. Round final datetime to nearest ROUND_DATETIME_MIN
+    if (ROUND_DATETIME_MIN > 0) {
+        const stepMs = ROUND_DATETIME_MIN * 60000;
+        cursor = Math.round(cursor / stepMs) * stepMs;
+    }
+
     // 6. Format result datetime — "MMM DD, HH:00 am/pm"
     const finDate = new Date(cursor);
     const monthStr = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, month: 'short' }).format(finDate);
