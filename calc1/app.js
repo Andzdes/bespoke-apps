@@ -89,15 +89,17 @@ function getOffDayHint() {
     const todayIso = isoWeekday(wc);
     const todayIsWorkday = WORK_DAYS.includes(todayIso);
 
-    // Find the next workday starting from a given UTC ms
-    function findNextWorkday(fromMs) {
-        let ms = fromMs;
+    // Anchor at noon today (UTC ms) — DST shifts of ±1h won't change the calendar day
+    const noonTodayMs = nowMs + (12 - wc.hour) * 3600000 - wc.minute * 60000;
+
+    // Find the next workday by stepping calendar days from noon anchor
+    function findNextWorkday(noonAnchorMs) {
+        let ms = noonAnchorMs;
         for (let i = 0; i < 10; i++) {
             ms += 24 * 3600000;
             const w = wallClock(ms);
             const iso = isoWeekday(w);
             if (WORK_DAYS.includes(iso)) {
-                // Return JS weekday (0=Sun..6=Sat) for DAY_NAMES_SHORT
                 return DAY_NAMES_SHORT[w.weekday];
             }
         }
@@ -106,17 +108,17 @@ function getOffDayHint() {
 
     if (!todayIsWorkday) {
         // Case A: today is a day off
-        const next = findNextWorkday(nowMs);
+        const next = findNextWorkday(noonTodayMs);
         return next ? `Сегодня выходной. Работы начнутся в ${next}` : null;
     }
 
     if (wc.hour >= WORKDAY_END_HOUR) {
         // Case B: workday is over — check if tomorrow is off
-        const tomorrowMs = nowMs + 24 * 3600000;
-        const tw = wallClock(tomorrowMs);
+        const noonTomorrowMs = noonTodayMs + 24 * 3600000;
+        const tw = wallClock(noonTomorrowMs);
         const tomorrowIso = isoWeekday(tw);
         if (!WORK_DAYS.includes(tomorrowIso)) {
-            const next = findNextWorkday(nowMs);
+            const next = findNextWorkday(noonTodayMs);
             return next ? `Завтра выходной. Работы начнутся в ${next}` : null;
         }
     }
