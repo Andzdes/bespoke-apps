@@ -498,6 +498,20 @@ body {
   flex-direction: column;
   align-items: flex-start;
   cursor: default;
+  margin: var(--sp-xs) 0;
+}
+
+.settings__row--workdays {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  cursor: default;
+  margin: var(--sp-sm) 0;
+  gap: var(--sp-md);
+}
+
+.settings__row--workdays .settings__weekdays {
+  margin-top: 0;
 }
 
 .settings__label {

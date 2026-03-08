@@ -61,13 +61,8 @@
                         <span class="settings__unit">мин</span>
                     </label>
                     <label class="settings__row">
-                        <span class="settings__label">Поклейка кромки (ПВХ)</span>
-                        <input type="number" class="settings__input" id="cfg_edge_pvc" min="1" max="999">
-                        <span class="settings__unit">мин</span>
-                    </label>
-                    <label class="settings__row">
-                        <span class="settings__label">Поклейка кромки (PG)</span>
-                        <input type="number" class="settings__input" id="cfg_edge_pg" min="1" max="999">
+                        <span class="settings__label">Поклейка кромки</span>
+                        <input type="number" class="settings__input" id="cfg_edge" min="1" max="999">
                         <span class="settings__unit">мин</span>
                     </label>
                     <label class="settings__row">
@@ -89,7 +84,7 @@
                         <input type="number" class="settings__input" id="cfg_day_end" min="1" max="24">
                         <span class="settings__unit">час</span>
                     </label>
-                    <div class="settings__row settings__row--block">
+                    <div class="settings__row settings__row--workdays">
                         <span class="settings__label">Рабочие дни</span>
                         <div class="settings__weekdays" id="cfg_workdays">
                             <label class="settings__day"><input type="checkbox" value="1"><span>Пн</span></label>
@@ -101,19 +96,24 @@
                             <label class="settings__day"><input type="checkbox" value="7"><span>Вс</span></label>
                         </div>
                     </div>
+                    <label class="settings__row">
+                        <span class="settings__label">Перенести старт, если до конца смены</span>
+                        <input type="number" class="settings__input" id="cfg_shift_start" min="0" max="999">
+                        <span class="settings__unit">мин</span>
+                    </label>
                 </div>
 
                 <div class="settings__block">
                     <div class="settings__section-title">Производство</div>
                     <label class="settings__row">
-                        <span class="settings__label">Лимит листов PG (+1 день)</span>
+                        <span class="settings__label">Дневной объем покраски кромки</span>
                         <input type="number" class="settings__input" id="cfg_pg_limit" min="1" max="999">
-                        <span class="settings__unit">л.</span>
+                        <span class="settings__unit">лист.</span>
                     </label>
                     <label class="settings__row">
                         <span class="settings__label">Доставка по умолчанию</span>
                         <input type="number" class="settings__input" id="cfg_delivery_default" min="0" max="99">
-                        <span class="settings__unit">ч.</span>
+                        <span class="settings__unit">час</span>
                     </label>
                 </div>
             </div>

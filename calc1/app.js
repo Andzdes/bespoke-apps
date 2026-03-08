@@ -5,12 +5,12 @@
 // ── Settings: defaults ── //
 const DEFAULTS = {
     cutting: 18,
-    edge_pvc: 20,
-    edge_pg: 20,
+    edge: 20,
     assembly: 25,
     day_start: 7,
     day_end: 18,
     work_days: [1, 2, 3, 4, 5, 6],
+    shift_start: 0,
     pg_limit: 30,
     delivery_default: 3,
     hold_delay: 1000,
@@ -25,6 +25,13 @@ const DEFAULTS = {
 function loadSettings() {
     try {
         const saved = JSON.parse(localStorage.getItem('calc1_settings') || '{}');
+        // Migrate old edge_pvc/edge_pg to unified edge
+        if (saved.edge === undefined && (saved.edge_pvc !== undefined || saved.edge_pg !== undefined)) {
+            saved.edge = saved.edge_pvc || saved.edge_pg || DEFAULTS.edge;
+            delete saved.edge_pvc;
+            delete saved.edge_pg;
+            localStorage.setItem('calc1_settings', JSON.stringify(saved));
+        }
         return Object.assign({}, DEFAULTS, saved);
     } catch {
         return Object.assign({}, DEFAULTS);
@@ -35,12 +42,12 @@ function loadSettings() {
 let cfg = loadSettings();
 
 let CUTTING_MIN_PER_SHEET = cfg.cutting;
-let EDGE_PVC_MIN_PER_SHEET = cfg.edge_pvc;
-let EDGE_PG_MIN_PER_SHEET = cfg.edge_pg;
+let EDGE_MIN_PER_SHEET = cfg.edge;
 let ASSEMBLY_MIN_PER_SHEET = cfg.assembly;
 let WORKDAY_START_HOUR = cfg.day_start;
 let WORKDAY_END_HOUR = cfg.day_end;
 let WORK_DAYS = cfg.work_days.slice();
+let SHIFT_START_MIN = cfg.shift_start;
 let PG_LIMIT = cfg.pg_limit;
 let TIMEZONE = cfg.timezone;
 let ROUND_DURATION_MIN = cfg.round_dur;
@@ -130,7 +137,16 @@ function getOffDayHint() {
         if (WORK_DAYS.includes(iso) &&
             wc.hour >= WORKDAY_START_HOUR &&
             wc.hour < WORKDAY_END_HOUR) {
-            break; // already in work time
+            // Check shift_start: if remaining minutes today < SHIFT_START_MIN, push to next workday
+            if (SHIFT_START_MIN > 0) {
+                const minutesLeft = (WORKDAY_END_HOUR - wc.hour) * 60 - wc.minute;
+                if (minutesLeft <= SHIFT_START_MIN) {
+                    // Jump to next day start
+                    utcMs += ((24 - wc.hour) + WORKDAY_START_HOUR) * 3600000 - wc.minute * 60000;
+                    continue; // re-check (next day might be a day off)
+                }
+            }
+            break; // already in work time with enough remaining time
         }
         if (!WORK_DAYS.includes(iso)) {
             utcMs += (24 - wc.hour) * 3600000 - wc.minute * 60000;
@@ -240,7 +256,7 @@ function calculate() {
     }
 
     // 2. Total work-minutes
-    const edgeRate = edge === 'Paint Grade' ? EDGE_PG_MIN_PER_SHEET : EDGE_PVC_MIN_PER_SHEET;
+    const edgeRate = EDGE_MIN_PER_SHEET;
     let totalMin = sheets * (CUTTING_MIN_PER_SHEET + edgeRate + ASSEMBLY_MIN_PER_SHEET);
     totalMin += delivery * 60; // delivery is in hours
 
@@ -554,11 +570,11 @@ calculate();
 
     function populateForm(c) {
         document.getElementById('cfg_cutting').value = c.cutting;
-        document.getElementById('cfg_edge_pvc').value = c.edge_pvc;
-        document.getElementById('cfg_edge_pg').value = c.edge_pg;
+        document.getElementById('cfg_edge').value = c.edge;
         document.getElementById('cfg_assembly').value = c.assembly;
         document.getElementById('cfg_day_start').value = c.day_start;
         document.getElementById('cfg_day_end').value = c.day_end;
+        document.getElementById('cfg_shift_start').value = c.shift_start;
         document.getElementById('cfg_pg_limit').value = c.pg_limit;
         document.getElementById('cfg_delivery_default').value = c.delivery_default;
         document.getElementById('cfg_hold_delay').value = c.hold_delay;
@@ -580,12 +596,12 @@ calculate();
         });
         return {
             cutting: Number(document.getElementById('cfg_cutting').value) || DEFAULTS.cutting,
-            edge_pvc: Number(document.getElementById('cfg_edge_pvc').value) || DEFAULTS.edge_pvc,
-            edge_pg: Number(document.getElementById('cfg_edge_pg').value) || DEFAULTS.edge_pg,
+            edge: Number(document.getElementById('cfg_edge').value) || DEFAULTS.edge,
             assembly: Number(document.getElementById('cfg_assembly').value) || DEFAULTS.assembly,
             day_start: Number(document.getElementById('cfg_day_start').value),
             day_end: Number(document.getElementById('cfg_day_end').value),
             work_days: days.length ? days : DEFAULTS.work_days.slice(),
+            shift_start: Number(document.getElementById('cfg_shift_start').value) || 0,
             pg_limit: Number(document.getElementById('cfg_pg_limit').value) || DEFAULTS.pg_limit,
             delivery_default: Number(document.getElementById('cfg_delivery_default').value),
             hold_delay: Number(document.getElementById('cfg_hold_delay').value) || DEFAULTS.hold_delay,
@@ -599,12 +615,12 @@ calculate();
 
     function applyConfig(c) {
         CUTTING_MIN_PER_SHEET = c.cutting;
-        EDGE_PVC_MIN_PER_SHEET = c.edge_pvc;
-        EDGE_PG_MIN_PER_SHEET = c.edge_pg;
+        EDGE_MIN_PER_SHEET = c.edge;
         ASSEMBLY_MIN_PER_SHEET = c.assembly;
         WORKDAY_START_HOUR = c.day_start;
         WORKDAY_END_HOUR = c.day_end;
         WORK_DAYS = c.work_days.slice();
+        SHIFT_START_MIN = c.shift_start;
         PG_LIMIT = c.pg_limit;
         DELIVERY_DEFAULT = c.delivery_default;
         HOLD_DELAY_MS = c.hold_delay;
