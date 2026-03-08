@@ -117,8 +117,11 @@ body {
 
 .calc__header-actions {
   display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: var(--sp-xs);
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .calc__icon {
@@ -133,6 +136,8 @@ body {
   font-weight: 700;
   color: var(--clr-text);
   letter-spacing: -0.02em;
+  flex: 1;
+  min-width: 0;
 }
 
 /* --- Form Fields --- */
