@@ -548,10 +548,26 @@ calculate();
     const tabs = document.querySelectorAll('.settings__tab');
     const panes = { main: document.getElementById('settings_tab_main'), advanced: document.getElementById('settings_tab_advanced') };
 
-    // Toggle open/close
+    const helpBtn = document.getElementById('help_btn');
+    const helpPanel = document.getElementById('help_panel');
+    const helpClose = document.getElementById('help_close');
+
+    // Toggle open/close help
+    if (helpBtn && helpPanel && helpClose) {
+        helpBtn.addEventListener('click', () => {
+            helpPanel.hidden = !helpPanel.hidden;
+            panel.hidden = true; // ensure settings is closed
+        });
+        helpClose.addEventListener('click', () => {
+            helpPanel.hidden = true;
+        });
+    }
+
+    // Toggle open/close settings
     btnOpen.addEventListener('click', () => {
         const isOpen = !panel.hidden;
         panel.hidden = isOpen;
+        if (helpPanel) helpPanel.hidden = true; // ensure help is closed
         if (!isOpen) populateForm(cfg);
     });
 

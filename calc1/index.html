@@ -32,14 +32,24 @@
                 <line x1="12" y1="18" x2="12" y2="18.01" />
             </svg>
             <h1 class="calc__title">Сроки производства</h1>
-            <button type="button" class="calc__settings-btn" id="settings_btn" title="Настройки">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3" />
-                    <path
-                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-            </button>
+            <div class="calc__header-actions">
+                <button type="button" class="calc__settings-btn" id="help_btn" title="Справка">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </button>
+                <button type="button" class="calc__settings-btn" id="settings_btn" title="Настройки">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- Settings Panel -->
@@ -169,10 +179,77 @@
             </div>
         </div>
 
+        <!-- Help Panel -->
+        <div class="calc__settings" id="help_panel" hidden>
+            <div class="settings__tabs">
+                <div class="settings__tab is-active" style="cursor: default; pointer-events: none;">Справка</div>
+            </div>
+            <div class="settings__pane">
+                <style>
+                    .calc__help-text {
+                        font-size: var(--fs-sm);
+                        color: var(--clr-text);
+                        line-height: 1.5;
+                        padding: var(--sp-sm) var(--sp-md);
+                    }
+
+                    .calc__help-text p {
+                        margin-bottom: var(--sp-sm);
+                    }
+
+                    .calc__help-text ul {
+                        padding-left: 1.5rem;
+                        margin-bottom: var(--sp-sm);
+                    }
+
+                    .calc__help-text li {
+                        margin-bottom: 0.25rem;
+                    }
+
+                    .calc__help-text b {
+                        color: var(--clr-text);
+                        font-weight: 600;
+                    }
+
+                    .calc__help-text p:last-child {
+                        margin-bottom: 0;
+                    }
+
+                    .calc__help-note {
+                        color: var(--clr-text-muted);
+                        font-size: var(--fs-xs);
+                    }
+                </style>
+                <div class="settings__block calc__help-text">
+                    <p>Калькулятор считает <b>дату доставки корпусов мебели на объект</b>. Просчет времени на саму
+                        установку (корпусов, финишных панелей и фасадов) будет добавлен позже, когда заработает
+                        календарь установщиков.</p>
+                    <div class="settings__section-title" style="margin-top: var(--sp-sm);">Как работает алгоритм:</div>
+                    <ul>
+                        <li><b>Расчет в листах:</b> Скорость порезки на CNC и поклейки кромки обычно измеряется в
+                            погонных футах, а сборка — в корпусах. Но для быстрой оценки сроков все операции
+                            аппроксимированы в «минутах на лист» — это усреднение, которое учитывает типичный метраж
+                            кромки и количество деталей на один лист материала.</li>
+                        <li><b>Время на производство:</b> Количество листов умножается на нормативы времени (порезка,
+                            поклейка, сборка).</li>
+                        <li><b>Тип кромки:</b> Для кромки Paint Grade прибавляются полные рабочие дни на малярные работы
+                            и сушку (по умолчанию 1 день на каждые 30 листов).</li>
+                        <li><b>График цеха:</b> Результат накладывается на рабочие часы. Если работа выпадает на конец
+                            смены, старт переносится на следующее утро.</li>
+                    </ul>
+                    <p class="calc__help-note">Все нормативы (время операций, доставка по умолчанию, график работы)
+                        настраиваются в меню настроек.</p>
+                </div>
+            </div>
+            <div class="settings__footer" style="justify-content: flex-end;">
+                <button type="button" class="settings__btn-cancel" id="help_close">Закрыть</button>
+            </div>
+        </div>
+
         <!-- Inputs -->
         <div class="calc__fields">
 
-            <div class="calc__group">
+            <div class="calc__group calc__group--row">
                 <label class="calc__label" for="sheets_count">Кол-во листов материала</label>
                 <div class="calc__number-wrap">
                     <button type="button" class="calc__step calc__step--minus" tabindex="-1" data-target="sheets_count">
@@ -193,7 +270,7 @@
                 </div>
             </div>
 
-            <div class="calc__group">
+            <div class="calc__group calc__group--row">
                 <label class="calc__label">Тип кромки</label>
                 <div class="calc__number-wrap">
                     <div role="button" class="calc__step calc__step--minus" tabindex="0" id="edge_prev">
@@ -213,7 +290,7 @@
                 </div>
             </div>
 
-            <div class="calc__group">
+            <div class="calc__group calc__group--row">
                 <label class="calc__label" for="delivery_hours">Доставка (часы)</label>
                 <div class="calc__number-wrap">
                     <button type="button" class="calc__step calc__step--minus" tabindex="-1"
